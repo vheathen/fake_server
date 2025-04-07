@@ -70,7 +70,7 @@ defmodule FakeServer.Request do
   end
 
   defp decode(body) do
-    case Poison.decode(body) do
+    case JSON.decode(body) do
       {:ok, map} -> map
       _ -> body
     end

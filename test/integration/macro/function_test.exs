@@ -14,28 +14,28 @@ defmodule FakeServer.Integration.FunctionTest do
 
     test_with_server "returns the default response if the function does not return a FakeServer.Response object" do
       route("/test", fn _ -> :ok end)
-      response = HTTPoison.get!(FakeServer.address() <> "/test")
-      assert response.status_code == 200
+      response = Req.get!(FakeServer.http_address() <> "/test")
+      assert response.status == 200
       assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
     end
 
     test_with_server "returns the corresponding response if the function returns a FakeServer.Response object" do
       route("/test", fn _ -> Response.bad_request!() end)
-      response = HTTPoison.get!(FakeServer.address() <> "/test")
-      assert response.status_code == 400
+      response = Req.get!(FakeServer.http_address() <> "/test")
+      assert response.status == 400
     end
 
     test_with_server "returns the corresponding response if the function returns a {:ok, FakeServer.Response} tuple" do
       route("/test", fn _ -> Response.bad_request() end)
-      response = HTTPoison.get!(FakeServer.address() <> "/test")
-      assert response.status_code == 400
+      response = Req.get!(FakeServer.http_address() <> "/test")
+      assert response.status == 400
     end
 
     test_with_server "computes hits for the corresponding route" do
       route("/test", fn _ -> Response.bad_request!() end)
       assert hits() == 0
       assert hits("/test") == 0
-      HTTPoison.get!(FakeServer.address() <> "/test")
+      Req.get!(FakeServer.http_address() <> "/test")
       assert hits() == 1
       assert hits("/test") == 1
     end
@@ -45,10 +45,10 @@ defmodule FakeServer.Integration.FunctionTest do
         if body == "TEST", do: Response.no_content!(), else: Response.bad_request!()
       end)
 
-      response1 = HTTPoison.post!("#{FakeServer.address()}/test", "TEST", [], [])
-      assert response1.status_code == 204
-      response2 = HTTPoison.post!("#{FakeServer.address()}/test", "NOT_TEST", [], [])
-      assert response2.status_code == 400
+      response1 = Req.post!("#{FakeServer.http_address()}/test", body: "TEST")
+      assert response1.status == 204
+      response2 = Req.post!("#{FakeServer.http_address()}/test", body: "NOT_TEST")
+      assert response2.status == 400
     end
 
     test_with_server "decode the body if the content_type header is application/json and the body is decodable" do
@@ -57,24 +57,22 @@ defmodule FakeServer.Integration.FunctionTest do
       end)
 
       response1 =
-        HTTPoison.post!(
-          "#{FakeServer.address()}/test",
-          ~s<{"test": true}>,
-          ["Content-Type": "application/json"],
-          []
+        Req.post!(
+          "#{FakeServer.http_address()}/test",
+          body: ~s<{"test": true}>,
+          headers: ["content-type": "application/json"]
         )
 
-      assert response1.status_code == 200
+      assert response1.status == 200
 
       response2 =
-        HTTPoison.post!(
-          "#{FakeServer.address()}/test",
-          ~s<not a valid json>,
-          ["Content-Type": "application/json"],
-          []
+        Req.post!(
+          "#{FakeServer.http_address()}/test",
+          body: ~s<not a valid json>,
+          headers: ["content-type": "application/json"]
         )
 
-      assert response2.status_code == 400
+      assert response2.status == 400
     end
 
     test_with_server "ensures the request has cookies" do
@@ -85,14 +83,20 @@ defmodule FakeServer.Integration.FunctionTest do
       end)
 
       response1 =
-        HTTPoison.get!("#{FakeServer.address()}/test", %{}, hackney: [cookie: ["logged_in=true"]])
+        Req.get!("#{FakeServer.http_address()}/test",
+          body: %{},
+          headers: [cookie: ["logged_in=true"]]
+        )
 
-      assert response1.status_code == 200
+      assert response1.status == 200
 
       response2 =
-        HTTPoison.get!("#{FakeServer.address()}/test", %{}, hackney: [cookie: ["logged_in=false"]])
+        Req.get!("#{FakeServer.http_address()}/test",
+          body: %{},
+          headers: [cookie: ["logged_in=false"]]
+        )
 
-      assert response2.status_code == 403
+      assert response2.status == 403
     end
 
     test_with_server "ensures the request has headers" do
@@ -102,10 +106,12 @@ defmodule FakeServer.Integration.FunctionTest do
           else: Response.forbidden!()
       end)
 
-      response1 = HTTPoison.get!("#{FakeServer.address()}/test", Authorization: "Bearer 1234")
-      assert response1.status_code == 200
-      response2 = HTTPoison.get!("#{FakeServer.address()}/test")
-      assert response2.status_code == 403
+      response1 =
+        Req.get!("#{FakeServer.http_address()}/test", headers: [authorization: "Bearer 1234"])
+
+      assert response1.status == 200
+      response2 = Req.get!("#{FakeServer.http_address()}/test")
+      assert response2.status == 403
     end
 
     test_with_server "ensures the request has a method" do
@@ -113,10 +119,10 @@ defmodule FakeServer.Integration.FunctionTest do
         if method == "GET", do: Response.ok!(), else: Response.bad_request!()
       end)
 
-      response1 = HTTPoison.get!("#{FakeServer.address()}/test")
-      assert response1.status_code == 200
-      response2 = HTTPoison.post!("#{FakeServer.address()}/test", [], [])
-      assert response2.status_code == 400
+      response1 = Req.get!("#{FakeServer.http_address()}/test")
+      assert response1.status == 200
+      response2 = Req.post!("#{FakeServer.http_address()}/test")
+      assert response2.status == 400
     end
 
     test_with_server "ensures the request has a query" do
@@ -126,10 +132,10 @@ defmodule FakeServer.Integration.FunctionTest do
           else: Response.forbidden!()
       end)
 
-      response1 = HTTPoison.get!("#{FakeServer.address()}/test?access_token=1234")
-      assert response1.status_code == 200
-      response2 = HTTPoison.get!("#{FakeServer.address()}/test", [], [])
-      assert response2.status_code == 403
+      response1 = Req.get!("#{FakeServer.http_address()}/test?access_token=1234")
+      assert response1.status == 200
+      response2 = Req.get!("#{FakeServer.http_address()}/test")
+      assert response2.status == 403
     end
 
     test_with_server "ensures the request has a query_string" do
@@ -137,10 +143,10 @@ defmodule FakeServer.Integration.FunctionTest do
         if query_string == "access_token=1234", do: Response.ok!(), else: Response.forbidden!()
       end)
 
-      response1 = HTTPoison.get!("#{FakeServer.address()}/test?access_token=1234")
-      assert response1.status_code == 200
-      response2 = HTTPoison.get!("#{FakeServer.address()}/test", [], [])
-      assert response2.status_code == 403
+      response1 = Req.get!("#{FakeServer.http_address()}/test?access_token=1234")
+      assert response1.status == 200
+      response2 = Req.get!("#{FakeServer.http_address()}/test")
+      assert response2.status == 403
     end
   end
 end

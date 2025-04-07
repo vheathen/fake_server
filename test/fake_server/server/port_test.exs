@@ -14,14 +14,14 @@ defmodule FakeServer.PortTest do
     end
 
     test "returns {:error, reason} when port is not available" do
-      {:ok, socket} = :ranch_tcp.listen(ip: {0, 0, 0, 0}, port: 65000)
+      {:ok, socket} = :ranch_tcp.listen(%{socket_opts: [ip: {0, 0, 0, 0}, port: 65000]})
       assert {:error, {65000, "port is already in use"}} == Port.ensure(65000)
       :erlang.port_close(socket)
     end
 
     test "returns {:error, reason} when a random port could not be allocated" do
       Application.put_env(:fake_server, :port_range, [65000])
-      {:ok, socket} = :ranch_tcp.listen(ip: {0, 0, 0, 0}, port: 65000)
+      assert {:ok, socket} = :ranch_tcp.listen(%{socket_opts: [ip: {0, 0, 0, 0}, port: 65000]})
       assert {:error, "could not allocate a random port"} == Port.ensure(nil)
       :erlang.port_close(socket)
       Application.delete_env(:fake_server, :port_range)

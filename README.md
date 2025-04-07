@@ -1,4 +1,5 @@
 # FakeServer
+
 [![Build Status](https://travis-ci.org/bernardolins/fake_server.svg?branch=master)](https://travis-ci.org/bernardolins/fake_server)
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 [![Hex.pm](https://img.shields.io/hexpm/dt/fake_server.svg)](https://hex.pm/packages/fake_server)
@@ -45,34 +46,34 @@ defmodule MyTest do
   import FakeServer
 
   test_with_server "returns 404 if a request is made to a non-configured route" do
-    response = HTTPoison.get!("#{FakeServer.address}/not/configured")
-    assert response.status_code == 404
+    response = Req.get!("#{FakeServer.http_address}/not/configured")
+    assert response.status == 404
   end
 
   test_with_server "when the response is a structure it returns the given response" do
     route "/test", Response.no_content!()
-    response = HTTPoison.get!("#{FakeServer.address}/test")
-    assert response.status_code == 204
+    response = Req.get!("#{FakeServer.http_address}/test")
+    assert response.status == 204
   end
 
   test_with_server "when the response is a list it returns the first element of the list and removes it" do
     route "/test", [Response.ok!(), Response.no_content!()]
-    response = HTTPoison.get!("#{FakeServer.address}/test")
-    assert response.status_code == 200
-    response = HTTPoison.get!("#{FakeServer.address}/test")
-    assert response.status_code == 204
+    response = Req.get!("#{FakeServer.http_address}/test")
+    assert response.status == 200
+    response = Req.get!("#{FakeServer.http_address}/test")
+    assert response.status == 204
   end
 
   test_with_server "when the response is a function it runs the function" do
     route "/say/hi", fn(_) -> IO.puts "HI!" end
-    response = HTTPoison.get! "#{FakeServer.address}/say/hi"
+    response = Req.get! "#{FakeServer.address}/say/hi"
   end
 
   test_with_server "computes hits for the corresponding route" do
     route "/test", Response.no_content!()
     assert hits() == 0
     assert hits("/test") == 0
-    HTTPoison.get!("#{FakeServer.address}/test")
+    Req.get!("#{FakeServer.http_address}/test")
     assert hits() == 1
     assert hits("/test") == 1
   end
@@ -82,10 +83,10 @@ defmodule MyTest do
   end
 end
 ```
+
 #### Setup Server
 
 If you need to do some setup before every `test_with_server` tests, you can define a `setup_test_with_server/1` function in your module. This function will receive a %FakeServer.Instance{} struct as a parameter.
-
 
 ### Standalone Server
 
@@ -101,4 +102,5 @@ iex> :ok = FakeServer.put_route(pid, "/say/hi", fn(_) -> IO.puts "HI!" end)
 iex> {:ok, port} = FakeServer.port(:my_server)
 {:ok, 62698}
 ```
+
 For more examples you can see the [docs](https://hexdocs.pm/fake_server/api-reference.html).

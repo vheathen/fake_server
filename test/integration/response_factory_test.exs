@@ -4,7 +4,7 @@ defmodule MyResponseFactory do
   def person_response do
     ok(
       %{
-        name: Faker.Name.name(),
+        name: Faker.Person.name(),
         email: Faker.Internet.free_email(),
         company: %{name: Faker.Company.name(), county: Faker.Address.country()}
       },
@@ -20,14 +20,14 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
 
   test_with_server "basic factory usage" do
     customized_response = %{body: body} = MyResponseFactory.build(:person)
-    person = Poison.decode!(body)
+    person = JSON.decode!(body)
 
     route("/person", customized_response)
 
-    response = HTTPoison.get!(FakeServer.address() <> "/person")
-    body = Poison.decode!(response.body)
+    response = Req.get!(FakeServer.http_address() <> "/person")
+    body = response.body
 
-    assert response.status_code == 200
+    assert response.status == 200
     assert person["name"] == body["name"]
     assert person["email"] == body["email"]
     assert person["company"]["name"] == body["company"]["name"]
@@ -40,10 +40,10 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
       MyResponseFactory.build(:person, name: "John", email: "john@myawesomemail.com")
     )
 
-    response = HTTPoison.get!(FakeServer.address() <> "/person")
-    body = Poison.decode!(response.body)
+    response = Req.get!(FakeServer.http_address() <> "/person")
+    body = response.body
 
-    assert response.status_code == 200
+    assert response.status == 200
     assert body["name"] == "John"
     assert body["email"] == "john@myawesomemail.com"
   end
@@ -51,10 +51,10 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
   test_with_server "deleting an attribute" do
     route("/person", MyResponseFactory.build(:person, name: nil))
 
-    response = HTTPoison.get!(FakeServer.address() <> "/person")
-    body = Poison.decode!(response.body)
+    response = Req.get!(FakeServer.http_address() <> "/person")
+    body = response.body
 
-    assert response.status_code == 200
+    assert response.status == 200
     assert body["name"] == nil
   end
 
@@ -64,21 +64,21 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
       MyResponseFactory.build(:person, %{"Content-Type" => "application/x-www-form-urlencoded"})
     )
 
-    response = HTTPoison.get!(FakeServer.address() <> "/person")
+    response = Req.get!(FakeServer.http_address() <> "/person")
 
-    assert response.status_code == 200
+    assert response.status == 200
 
     assert Enum.any?(response.headers, fn header ->
-             header == {"Content-Type", "application/x-www-form-urlencoded"}
+             header == {"content-type", ["application/x-www-form-urlencoded"]}
            end)
   end
 
   test_with_server "deleting a header" do
     route("/person", MyResponseFactory.build(:person, %{"Content-Type" => nil}))
 
-    response = HTTPoison.get!(FakeServer.address() <> "/person")
+    response = Req.get!(FakeServer.http_address() <> "/person")
 
-    assert response.status_code == 200
+    assert response.status == 200
     refute Enum.any?(response.headers, fn header -> elem(header, 0) == "Content-Type" end)
   end
 
@@ -88,11 +88,11 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
     route("/person", person_list)
 
     Enum.each(person_list, fn person ->
-      response = HTTPoison.get!(FakeServer.address() <> "/person")
-      body = Poison.decode!(response.body)
-      person = Poison.decode!(person.body)
+      response = Req.get!(FakeServer.http_address() <> "/person")
+      body = response.body
+      person = JSON.decode!(person.body)
 
-      assert response.status_code == 200
+      assert response.status == 200
       assert person["name"] == body["name"]
       assert person["email"] == body["email"]
       assert person["company"]["name"] == body["company"]["name"]
