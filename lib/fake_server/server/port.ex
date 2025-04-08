@@ -40,7 +40,7 @@ defmodule FakeServer.Port do
   defp valid?(port), do: Enum.member?(port_range(), port)
 
   defp available?(port) do
-    case :ranch_tcp.listen(ip: {0, 0, 0, 0}, port: port) do
+    case :ranch_tcp.listen(%{socket_opts: [ip: {0, 0, 0, 0}, port: port]}) do
       {:ok, socket} ->
         :erlang.port_close(socket)
         true

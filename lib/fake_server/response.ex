@@ -67,7 +67,8 @@ defmodule FakeServer.Response do
 
   def validate(response), do: {:error, {response, "invalid response type"}}
 
-  def set_cookie({:ok, %__MODULE__{} = response}, name, value), do: set_cookie(response, name, value)
+  def set_cookie({:ok, %__MODULE__{} = response}, name, value),
+    do: set_cookie(response, name, value)
 
   def set_cookie(%__MODULE__{cookies: cookies} = response, name, value) do
     %{response | cookies: Map.put(cookies, name, value)}
@@ -796,10 +797,9 @@ defmodule FakeServer.Response do
     do: {:ok, response}
 
   defp ensure_body_format(%__MODULE__{body: body} = response) when is_map(body) do
-    case Poison.encode(body) do
-      {:ok, body} -> {:ok, %__MODULE__{response | body: body}}
-      {:error, _} -> {:error, {body, "could not turn body map into json"}}
-    end
+    {:ok, %__MODULE__{response | body: JSON.encode!(body)}}
+  rescue
+    _ -> {:error, {body, "could not turn body map into json"}}
   end
 
   defp ensure_headers_keys(%__MODULE__{headers: headers} = response) do

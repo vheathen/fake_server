@@ -46,14 +46,14 @@ defmodule FakeServer.ResponseFactory do
 
     test_with_server "basic factory usage" do
       customized_response = %{body: body} = MyResponseFactory.build(:person)
-      person = Poison.decode!(body)
+      person = JSON.decode!(body)
 
       route "/person", customized_response
 
-      response = HTTPoison.get! FakeServer.address <> "/person"
-      body = Poison.decode!(response.body)
+      response = Req.get! FakeServer.address <> "/person"
+      body = JSON.decode!(response.body)
 
-      assert response.status_code == 200
+      assert response.status == 200
       assert person["name"] == body["name"]
       assert person["email"] == body["email"]
       assert person["company"]["name"] == body["company"]["name"]
@@ -62,12 +62,12 @@ defmodule FakeServer.ResponseFactory do
 
     test_with_server "setting custom attributes" do
       route "/person", do: MyResponseFactory.build(:person, name: "John", email: "john@myawesomemail.com")
-      person = Poison.decode!(body)
+      person = JSON.decode!(body)
 
-      response = HTTPoison.get! FakeServer.address <> "/person"
-      body = Poison.decode!(response.body)
+      response = Req.get! FakeServer.address <> "/person"
+      body = JSON.decode!(response.body)
 
-      assert response.status_code == 200
+      assert response.status == 200
       assert body["name"] == "John"
       assert body["email"] == "john@myawesomemail.com"
     end
@@ -75,28 +75,28 @@ defmodule FakeServer.ResponseFactory do
     test_with_server "deleting an attribute" do
       route "/person", do: MyResponseFactory.build(:person, name: nil)
 
-      response = HTTPoison.get! FakeServer.address <> "/person"
-      body = Poison.decode!(response.body)
+      response = Req.get! FakeServer.address <> "/person"
+      body = JSON.decode!(response.body)
 
-      assert response.status_code == 200
+      assert response.status == 200
       assert body["name"] == nil
     end
 
     test_with_server "overriding a header" do
       route "/person", do: MyResponseFactory.build(:person, %{"Content-Type" => "application/x-www-form-urlencoded"})
 
-      response = HTTPoison.get! FakeServer.address <> "/person"
+      response = Req.get! FakeServer.address <> "/person"
 
-      assert response.status_code == 200
+      assert response.status == 200
       assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
     end
 
     test_with_server "deleting a header" do
       route "/person", do: MyResponseFactory.build(:person, %{"Content-Type" => nil})
 
-      response = HTTPoison.get! FakeServer.address <> "/person"
+      response = Req.get! FakeServer.address <> "/person"
 
-      assert response.status_code == 200
+      assert response.status == 200
       refute Enum.any?(response.headers, fn(header) -> header == {"Content-Type", _} end)
     end
 
@@ -106,10 +106,10 @@ defmodule FakeServer.ResponseFactory do
       route "/person", do: person_list
 
       Enum.each(person_list, fn(person) ->
-        response = HTTPoison.get! FakeServer.address <> "/person"
-        body = Poison.decode!(response.body)
+        response = Req.get! FakeServer.address <> "/person"
+        body = JSON.decode!(response.body)
 
-        assert response.status_code == 200
+        assert response.status == 200
         assert person.body[:name] == body["name"]
         assert person.body[:email] == body["email"]
         assert person.body[:company][:name] == body["company"]["name"]
@@ -163,7 +163,7 @@ defmodule FakeServer.ResponseFactory do
       end
 
       defp override_body_keys(original_body, keys) do
-        case Poison.decode(original_body) do
+        case JSON.decode(original_body) do
           {:ok, decoded_body} ->
             Enum.reduce(keys, decoded_body, fn {key, value}, body ->
               key = if is_atom(key), do: to_string(key), else: key

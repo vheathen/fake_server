@@ -4,12 +4,19 @@ defmodule FakeServer.Mixfile do
   def project do
     [
       app: :fake_server,
-      version: "2.1.0",
-      elixir: "~> 1.4",
+      version: "3.0.0",
+      elixir: "~> 1.18",
       description: description(),
       package: package(),
       aliases: aliases(),
       test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.cobertura": :test
+      ],
       elixirc_paths: elixirc_paths(Mix.env()),
       docs: [
         groups_for_functions: [
@@ -21,17 +28,17 @@ defmodule FakeServer.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :cowboy], mod: {FakeServer.Application, []}]
+    [extra_applications: [:logger, :cowboy], mod: {FakeServer.Application, []}]
   end
 
   defp deps do
     [
-      {:cowboy, "~> 2.5"},
-      {:poison, ">= 1.0.0"},
-      {:faker, "~> 0.9", only: :test},
-      {:ex_doc, "~> 0.19", only: :dev},
-      {:httpoison, "~> 0.13", only: :test},
-      {:excoveralls, "~> 0.7", only: :test}
+      {:cowboy, "~> 2.13"},
+      {:faker, "~> 0.19.0-alpha.1", only: :test},
+      {:ex_doc, "~> 0.35", only: :dev},
+      {:req, "~> 0.5.0"},
+      {:excoveralls, "~> 0.18", only: :test},
+      {:mix_test_watch, "~> 1.2", only: [:dev, :test]}
     ]
   end
 

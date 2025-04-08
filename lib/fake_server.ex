@@ -226,8 +226,8 @@ defmodule FakeServer do
     end
 
     test_with_server "supports inline route configuration", [routes: [Route.create!(path: "/test", response: Response.accepted!())]] do
-      response = HTTPoison.get!(FakeServer.address <> "/test")
-      assert response.status_code == 202
+      response = Req.get!(FakeServer.address <> "/test")
+      assert response.status == 202
     end
   end
   ```
@@ -273,41 +273,41 @@ defmodule FakeServer do
       if path == "/test/hello", do: Response.ok!(), else: Response.not_found!()
     end
 
-    response = HTTPoison.get!(FakeServer.address <> "/test/hello")
-    assert response.status_code == 200
-    response = HTTPoison.get!(FakeServer.address <> "/test/world")
-    assert response.status_code == 404
+    response = Req.get!(FakeServer.address <> "/test/hello")
+    assert response.status == 200
+    response = Req.get!(FakeServer.address <> "/test/world")
+    assert response.status == 404
   end
 
   test_with_server "supports optional segments" do
     route "/test[/not[/mandatory]]", Response.accepted!()
 
-    response = HTTPoison.get!(FakeServer.address <> "/test")
-    assert response.status_code == 202
-    response = HTTPoison.get!(FakeServer.address <> "/test/not")
-    assert response.status_code == 202
-    response = HTTPoison.get!(FakeServer.address <> "/test/not/mandatory")
-    assert response.status_code == 202
+    response = Req.get!(FakeServer.address <> "/test")
+    assert response.status == 202
+    response = Req.get!(FakeServer.address <> "/test/not")
+    assert response.status == 202
+    response = Req.get!(FakeServer.address <> "/test/not/mandatory")
+    assert response.status == 202
   end
 
   test_with_server "supports fully optional segments" do
     route "/test/[...]", Response.accepted!()
 
-    response = HTTPoison.get!(FakeServer.address <> "/test")
-    assert response.status_code == 202
-    response = HTTPoison.get!(FakeServer.address <> "/test/not")
-    assert response.status_code == 202
-    response = HTTPoison.get!(FakeServer.address <> "/test/not/mandatory")
-    assert response.status_code == 202
+    response = Req.get!(FakeServer.address <> "/test")
+    assert response.status == 202
+    response = Req.get!(FakeServer.address <> "/test/not")
+    assert response.status == 202
+    response = Req.get!(FakeServer.address <> "/test/not/mandatory")
+    assert response.status == 202
   end
 
   test_with_server "paths ending in slash are no different than those ending without slash" do
     route "/test", Response.accepted!()
 
-    response = HTTPoison.get!(FakeServer.address <> "/test")
-    assert response.status_code == 202
-    response = HTTPoison.get!(FakeServer.address <> "/test/")
-    assert response.status_code == 202
+    response = Req.get!(FakeServer.address <> "/test")
+    assert response.status == 202
+    response = Req.get!(FakeServer.address <> "/test/")
+    assert response.status == 202
   end
   ```
 
@@ -327,11 +327,11 @@ defmodule FakeServer do
   test_with_server "Updating a user always returns 204" do
     route "/user/:id", Response.no_content!()
 
-    response = HTTPoison.put!(FakeServer.address <> "/user/1234")
-    assert response.status_code == 204
+    response = Req.put!(FakeServer.address <> "/user/1234")
+    assert response.status == 204
 
-    response = HTTPoison.put!(FakeServer.address <> "/user/5678")
-    assert response.status_code == 204
+    response = Req.put!(FakeServer.address <> "/user/5678")
+    assert response.status == 204
   end
   ```
 
@@ -344,16 +344,16 @@ defmodule FakeServer do
     route "/", [Response.ok, Response.not_found, Response.bad_request]
     assert FakeServer.hits == 0
 
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 200
+    response = Req.get! FakeServer.address <> "/"
+    assert response.status == 200
     assert FakeServer.hits == 1
 
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 404
+    response = Req.get! FakeServer.address <> "/"
+    assert response.status == 404
     assert FakeServer.hits == 2
 
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 400
+    response = Req.get! FakeServer.address <> "/"
+    assert response.status == 400
     assert FakeServer.hits == 3
   end
   ```
@@ -374,8 +374,8 @@ defmodule FakeServer do
   test_with_server "the server will return the default response if the function return is not a Response struct" do
     route "/", fn(_) -> :ok end
 
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 200
+    response = Req.get! FakeServer.address <> "/"
+    assert response.status == 200
     assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
@@ -388,16 +388,16 @@ defmodule FakeServer do
       end
     end
 
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 400
+    response = Req.get! FakeServer.address <> "/"
+    assert response.status == 400
     assert response.body == "You must provide and access_token!"
 
-    response = HTTPoison.get! FakeServer.address <> "/?access_token=4321"
-    assert response.status_code == 403
+    response = Req.get! FakeServer.address <> "/?access_token=4321"
+    assert response.status == 403
     assert response.body == "Invalid access token!"
 
-    response = HTTPoison.get! FakeServer.address <> "/?access_token=1234"
-    assert response.status_code == 200
+    response = Req.get! FakeServer.address <> "/?access_token=1234"
+    assert response.status == 200
     assert response.body == "Welcome!"
   end
   ```
@@ -492,9 +492,9 @@ defmodule FakeServer do
   test_with_server "counting server hits" do
     route "/", do: Response.ok
     assert FakeServer.hits == 0
-    HTTPoison.get! FakeServer.address <> "/"
+    Req.get! FakeServer.address <> "/"
     assert FakeServer.hits == 1
-    HTTPoison.get! FakeServer.address <> "/"
+    Req.get! FakeServer.address <> "/"
     assert FakeServer.hits == 2
   end
   ```
@@ -525,9 +525,9 @@ defmodule FakeServer do
     route "/cache", FakeServer.Response.ok
     assert (FakeServer.hits "/no/cache") == 0
     assert (FakeServer.hits "/cache") == 0
-    HTTPoison.get! FakeServer.address <> "/no/cache"
+    Req.get! FakeServer.address <> "/no/cache"
     assert (FakeServer.hits "/no/cache") == 1
-    HTTPoison.get! FakeServer.address <> "/cache"
+    Req.get! FakeServer.address <> "/cache"
     assert (FakeServer.hits "/cache") == 1
     assert FakeServer.hits == 2
   end

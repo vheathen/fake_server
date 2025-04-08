@@ -7,4 +7,8 @@ defmodule FakeServer.Error do
     message = "#{inspect(param)}: #{inspect(reason)}"
     %__MODULE__{message: message}
   end
+
+  def exception(message) do
+    %__MODULE__{message: @message_template <> ": #{inspect(message)}"}
+  end
 end
