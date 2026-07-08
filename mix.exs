@@ -36,7 +36,7 @@ defmodule FakeServer.Mixfile do
       {:cowboy, "~> 2.13"},
       {:faker, "~> 0.19.0-alpha.1", only: :test},
       {:ex_doc, "~> 0.35", only: :dev},
-      {:req, "~> 0.5.0"},
+      {:req, "~> 0.5.0 or ~> 0.6.0"},
       {:excoveralls, "~> 0.18", only: :test},
       {:mix_test_watch, "~> 1.2", only: [:dev, :test]}
     ]
